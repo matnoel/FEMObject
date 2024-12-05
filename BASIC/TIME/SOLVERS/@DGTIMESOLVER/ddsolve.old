@@ -1,0 +1,156 @@
+function [ut,vt,at] = ddsolve(L,b,M,K,C,u0,v0,solveur)
+% function u = ddsolve(L,b,A,B,u0,solveur)
+% solveur Discontinuous Galerkin : resolution de Mu'+Cu+Ku=b
+% L : DGTIMESOLVER
+% b : second membre
+% A, B : double ou matrice aleatoires
+% solveur : fonction donnant le solveur des systemes lineaires
+%           solveur(F,b) resoud Fu=b
+
+clock0 = clock;
+
+affiche = getparam(L,'display');
+if affiche
+fprintf('\n ---------------------------------------');
+fprintf('\n ------------ DGtime solver ------------')
+fprintf('\n ---------------------------------------\n');
+end
+
+if nargin<5
+C = [];    
+else
+if ~isempty(C)
+   error('traitement de l''amortissement à programmer') 
+end
+end
+
+
+
+T = L.TIMEMODEL;
+t = gett(T);
+nt =  getnt(T);
+dt = getdt(T);
+p  = getp(L);
+
+if p>1
+error('DG pas programme pour un ordre superieur à 1')    
+end
+
+[b,M,K,C] = init_resolution(T,b,M,K,C);
+
+n = size(M,1);
+I1 = [speye(n);sparse(n,n)];
+I2 = [sparse(n,n);speye(n)];
+
+A = I1*M*I1' + I2*K*I2' ; 
+B = - I2*K*I1' + I1*K*I2' ; 
+f = I1*b;
+
+
+if isuniform(T)
+    switch p
+        case 0
+D = A+B*dt(1);
+        case 1
+D = [1/2*A+B*(dt(1)/3) , 1/2*A+B*(dt(1)/6) ; ...
+    -1/2*A+B*(dt(1)/6) , 1/2*A+B*(dt(1)/3)];            
+    end
+end
+
+if nargin>=8 && ~isempty(solveur)
+solveur =  fcnchk(solveur);   
+else   
+    
+    if isuniform(T) && isa(D,'double')
+perm = symrcm(D);        
+[LD,UD] = lu(D(perm,perm));
+solveur = @(D,b) unperm(solve(UD,(LD\b(perm))),perm);
+    else
+solveur =  @solve;          
+    end
+end
+
+clock0=clock;
+
+n = size(A,1)/2;
+
+if nargin<6 || isempty(u0)
+u0 = zeros(n,1);        
+end
+if nargin<7 || isempty(v0)
+v0 = zeros(n,1);         
+end
+
+u0 = [u0;v0];
+
+switch p
+    case 0
+for i=1:nt
+pourcentage(i,nt)
+if i>1
+bi = f{i}*dt(i)+A*ut{i-1}; 
+else
+bi = f{i}*dt(i)+A*u0;    
+end
+if ~isuniform(T)
+D = A+B*dt(i);    
+end
+[ut{i},flag] = solveur(D,bi);
+end
+    case 1
+for i=1:nt
+pourcentage(i,nt)
+
+if i>1
+    U0 = ut{i-1}(2*n+1:end,:) ;
+else
+    U0 = u0;
+end
+
+bi = [f{i*(p+1)-1}*(dt(i)/3) + f{i*(p+1)}*(dt(i)/6)  ; ...
+      f{i*(p+1)-1}*(dt(i)/6) + f{i*(p+1)}*(dt(i)/3) ] + [A*U0;zeros(size(A,1),1)] ; 
+
+if ~isuniform(T)  
+D = [1/2*A+B*(dt(i)/3) , 1/2*A+B*(dt(i)/6) ; ...
+    -1/2*A+B*(dt(i)/6) , 1/2*A+B*(dt(i)/3)];    
+end
+[ut{i},flag] = solveur(D,bi);
+end        
+end
+
+%etime(clock,clock0)
+
+for i=1:nt 
+   ut{i} = reshape(ut{i},n*2,p+1); 
+end
+
+if getparam(L,'outputsplit')
+for i=1:nt
+vt{i}= ut{i}(1:n,:);
+ut{i}= ut{i}(n+1:2*n,:);
+end
+end
+
+try
+ut = horzcat(ut{:});
+vt = horzcat(vt{:});
+if nargout==3
+Dt = getDt(L);
+at = vt*Dt';    
+end
+catch
+    warning('la solution est laissée sous forme de cellules')
+end
+
+if getparam(L,'outputsplit')
+    ut = TIMEMATRIX(ut,T,[size(M,1),1]);
+    vt = TIMEMATRIX(vt,T,[size(M,1),1]);
+    
+else
+    ut = TIMEMATRIX(ut,T,[2*size(M,1),1]);
+end
+
+function [u,flag] = unperm(u,perm)
+u(perm,:)=u;
+flag=0;
+return

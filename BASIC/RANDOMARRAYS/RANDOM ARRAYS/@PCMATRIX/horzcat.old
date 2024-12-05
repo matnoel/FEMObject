@@ -1,0 +1,21 @@
+function w=horzcat(varargin)
+
+[rep,pos] = isclassin('PCMATRIX',varargin);
+if length(pos)~=nargin
+[rep,posrad] = isclassin('PCRADIALMATRIX',varargin);
+for i=posrad(:)'
+   varargin{i}=expand(varargin{i}) 
+end
+posnonrand = setdiff(1:nargin,union(pos,posrad));
+for i=posnonrand(:)'
+   varargin{i}=expand(varargin{i}*one(getPC(varargin{pos(1)})));
+end
+w = horzcat(varargin{:});
+else
+w = varargin{1};    
+for i=1:length(varargin)
+    W{i}=varargin{i}.MULTIMATRIX;
+end
+w.MULTIMATRIX = horzcat(W{:});
+  
+end

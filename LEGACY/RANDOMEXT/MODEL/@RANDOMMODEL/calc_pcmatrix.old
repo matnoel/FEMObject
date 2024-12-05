@@ -1,0 +1,57 @@
+function [M]=calc_pcmatrix(S,PC,fun,varargin)
+% function M=calc_multimatrix(S,fun,varargin)
+% S : MODEL
+% fun : pointeur sur une methode de la classe ELEMENT
+%       appel de  me=fun(ELEMENT,S,varargin{:}) 
+%       me est un tableau de celulles 
+%       me{i} est la matrice elementaire de taille ELEMENT.nbddl * ELEMENT.nbddl
+%       associee a l'element i de ELEMENT  
+% nmat : nombre de matrices calculees simultanement
+affiche=getcharin('affiche',varargin,0);
+
+if affiche
+fprintf('COMPUTING FINITE ELEMENT MATRIX \n')
+end
+
+if isa(fun,'char')
+ fun = eval(['@' fun]);
+end
+fun=fcnchk(fun);
+
+liste = getcharinvarargin('selgroup',varargin,1:S.nbgroupelem);
+
+for p=liste
+if affiche
+    fprintf('\n-> Computing element matrices of element group %3d / %3d ... ',p,S.nbgroupelem)
+end
+%[me{p},L]=fun(S.groupelem{p},getnode(S),PC,varargin{:});
+me{p}=fun(S.groupelem{p},getnode(S),PC,varargin{:});
+
+%Mp{p} = assemble_multimatrixelem(S,me{p},'selgroup',p);
+
+
+%if isa(L,'PCMATRIX')
+%  Mp{p} = PCRADIALMATRIX(Mp{p},size(Mp{p}),L);
+%elseif isa(L,'POLYCHAOS')
+%  Mp{p} = PCMATRIX(Mp{p},size(Mp{p}),L);  
+%elseif isempty(L)
+%else  
+%error(' ')
+%end
+%if affiche
+%fprintf('Elapsed time is %.3f seconds.',toc)
+%end
+
+end
+
+M = assemble_pcmatrixelem(S,me,'selgroup',liste);
+%M = Mp{liste(1)};
+%for p=liste(2:end)
+%M = M+Mp{p};
+%end
+
+if affiche
+    fprintf('  Total elapsed time is %.3f seconds.\n',toc)
+end
+
+

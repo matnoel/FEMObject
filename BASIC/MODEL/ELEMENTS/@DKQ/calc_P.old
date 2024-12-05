@@ -1,0 +1,10 @@
+function P = calc_P(elem,xnode)
+
+syscoord = getsyscoord(elem);
+R = getbase(syscoord);
+
+Rt=R';
+
+RD = [Rt,zeros(3,3);zeros(3,3),Rt] ;
+Z = zeros(6,6);
+P = [RD,Z,Z,Z;Z,RD,Z,Z;Z,Z,RD,Z;Z,Z,Z,RD];

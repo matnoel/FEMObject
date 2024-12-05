@@ -1,0 +1,73 @@
+function [sqrtD,sqrtC] = calc_sqrtopmat(mat,elem,xnode,xgauss)
+% function [sqrtD,sqrtC] = calc_sqrtopmat(mat,elem,xnode,xgauss)
+
+if nargin<=2
+    xnode = [];
+    xgauss = [];
+end
+
+switch getdim(elem)
+    case 1
+        E = evalparam(mat,'E',elem,xnode,xgauss); % Young modulus
+        S = evalparam(mat,'S',elem,xnode,xgauss); % cross-section area
+        sqrtD = sqrt(E*S); % square root of stiffness operator
+        sqrtC = 1/sqrt(E*S);
+    case 2
+        E = evalparam(mat,'E',elem,xnode,xgauss); % Young modulus
+        nu = evalparam(mat,'NU',elem,xnode,xgauss); % Poisson ratio
+        mu = E/(1+nu)/2; % second Lamé coefficient (shear modulus)
+        if isaxi(elem)
+            lambda = E*nu/(1+nu)/(1-2*nu); % first Lamé coefficient
+            kappa = E/(1-2*nu)/3; % bulk modulus
+            % kappa = lambda+2/3*mu; % bulk modulus
+            sqrtD = [sqrt(kappa/3)+2/3*sqrt(2*mu),sqrt(kappa/3)-sqrt(2*mu)/3,sqrt(kappa/3)-sqrt(2*mu)/3,0;...
+                sqrt(kappa/3)-sqrt(2*mu)/3,sqrt(kappa/3)+2/3*sqrt(2*mu),sqrt(kappa/3)-sqrt(2*mu)/3,0;...
+                sqrt(kappa/3)-sqrt(2*mu)/3,sqrt(kappa/3)-sqrt(2*mu)/3,sqrt(kappa/3)+2/3*sqrt(2*mu),0;...
+                0,0,0,sqrt(mu)];
+            sqrtC = [1/3/sqrt(3*kappa)+2/3/sqrt(2*mu),1/3/sqrt(3*kappa)-1/3/sqrt(2*mu),1/3/sqrt(3*kappa)-1/3/sqrt(2*mu),0;...
+                1/3/sqrt(3*kappa)-1/3/sqrt(2*mu),1/3/sqrt(3*kappa)+2/3/sqrt(2*mu),1/3/sqrt(3*kappa)-1/3/sqrt(2*mu),0;...
+                1/3/sqrt(3*kappa)-1/3/sqrt(2*mu),1/3/sqrt(3*kappa)-1/3/sqrt(2*mu),1/3/sqrt(3*kappa)+2/3/sqrt(2*mu),0;...
+                0,0,0,1/sqrt(mu)];
+        else
+            e = evalparam(mat,'DIM3',elem,xnode,xgauss); % thickness
+            switch getoption(elem)
+                case 'DEFO'
+                    lambda = E*nu/(1+nu)/(1-2*nu); % first Lamé coefficient
+                    % kappa = E/(1+nu)/(1-2*nu)/2; % bulk modulus
+                otherwise
+                    lambda = E*nu/(1-nu^2); % first Lamé coefficient
+                    % kappa = E/(1-nu)/2; % bulk modulus
+            end
+            kappa = lambda+mu; % bulk modulus
+            sqrtD = sqrt(e)*...
+                [sqrt(kappa/2)+sqrt(mu/2),sqrt(kappa/2)-sqrt(mu/2),0;...
+                sqrt(kappa/2)-sqrt(mu/2),sqrt(kappa/2)+sqrt(mu/2),0;...
+                0,0,sqrt(mu)];
+            sqrtC = 1/sqrt(e)*...
+                [1/2/sqrt(2*kappa)+1/2/sqrt(2*mu),1/2/sqrt(2*kappa)-1/2/sqrt(2*mu),0;...
+                1/2/sqrt(2*kappa)-1/2/sqrt(2*mu),1/2/sqrt(2*kappa)+1/2/sqrt(2*mu),0;...
+                0,0,1/sqrt(mu)];
+        end
+        
+    case 3
+        E = evalparam(mat,'E',elem,xnode,xgauss); % Young modulus
+        nu = evalparam(mat,'NU',elem,xnode,xgauss); % Poisson ratio
+        mu = E/(1+nu)/2; % second Lamé coefficient (shear modulus)
+        lambda = E*nu/(1+nu)/(1-2*nu); % first Lamé coefficient
+        kappa = E/(1-2*nu)/3; % bulk modulus
+        % kappa = lambda+2/3*mu; % bulk modulus
+        sqrtD = [sqrt(kappa/3)+2/3*sqrt(2*mu),sqrt(kappa/3)-sqrt(2*mu)/3,sqrt(kappa/3)-sqrt(2*mu)/3,0,0,0;...
+            sqrt(kappa/3)-sqrt(2*mu)/3,sqrt(kappa/3)+2/3*sqrt(2*mu),sqrt(kappa/3)-sqrt(2*mu)/3,0,0,0;...
+            sqrt(kappa/3)-sqrt(2*mu)/3,sqrt(kappa/3)-sqrt(2*mu)/3,sqrt(kappa/3)+2/3*sqrt(2*mu),0,0,0;...
+            0,0,0,sqrt(mu),0,0;...
+            0,0,0,0,sqrt(mu),0;...
+            0,0,0,0,0,sqrt(mu)];
+        sqrtC = [1/3/sqrt(3*kappa)+2/3/sqrt(2*mu),1/3/sqrt(3*kappa)-1/3/sqrt(2*mu),1/3/sqrt(3*kappa)-1/3/sqrt(2*mu),0,0,0;...
+                1/3/sqrt(3*kappa)-1/3/sqrt(2*mu),1/3/sqrt(3*kappa)+2/3/sqrt(2*mu),1/3/sqrt(3*kappa)-1/3/sqrt(2*mu),0,0,0;...
+                1/3/sqrt(3*kappa)-1/3/sqrt(2*mu),1/3/sqrt(3*kappa)-1/3/sqrt(2*mu),1/3/sqrt(3*kappa)+2/3/sqrt(2*mu),0,0,0;...
+                0,0,0,1/sqrt(mu),0,0;...
+                0,0,0,0,1/sqrt(mu),0;...
+                0,0,0,0,0,1/sqrt(mu)];
+        
+end
+

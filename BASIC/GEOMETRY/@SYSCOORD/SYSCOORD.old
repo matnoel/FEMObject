@@ -1,0 +1,31 @@
+function s=SYSCOORD(varargin)
+
+if nargin==0
+   s=SYSCOORD('PLAN'); 
+else
+switch class(varargin{1})
+    case 'char'
+switch varargin{1}
+    case {'UNID',1}
+dim = 1; axis={'X'};
+    case {'PLAN',2}
+dim = 2; axis={'X','Y'};
+    case {'TRID',3}
+dim = 3; axis={'X','Y','Z'};
+end        
+base = MYDOUBLEND(eye(dim));
+s.dim=dim;
+s.indim = dim;
+s.axis=axis;
+s=class(s,'SYSCOORD',base);
+
+    otherwise  
+base=MYDOUBLEND(varargin{1});
+axis = varargin{2};
+
+s.dim = size(base,2);
+s.indim = size(base,1);
+s.axis=axis;
+s=class(s,'SYSCOORD',base);
+end
+end

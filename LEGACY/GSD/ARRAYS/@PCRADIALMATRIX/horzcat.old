@@ -1,0 +1,28 @@
+function w=horzcat(varargin)
+
+if isclassin('PCMATRIX',varargin)
+for j=1:nargin
+    if isa(varargin{j},'PCRADIALMATRIX')
+      varargin{j}=expand(varargin{j});  
+    end
+end
+w=horzcat(varargin{:});
+elseif isclassin('double',varargin)
+    [rep,posrad] = isclassin('PCRADIALMATRIX',varargin);
+    [rep,posdou] = isclassin('double',varargin);
+    
+for i=pos(:)'
+   varargin{i}=expand(varargin{i}*one(getPC(varargin{posrad(1)})));
+end
+
+w=horzcat(varargin{:});
+
+else
+w=varargin{1};
+for j=1:length(varargin)    
+g{j} = varargin{j}.V;     
+end
+w.V = horzcat(g{:});
+warning('un peu n''importe quoi')
+end
+

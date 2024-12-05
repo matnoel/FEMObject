@@ -1,0 +1,4 @@
+function [tplot,rep]=gettplot(L)
+
+tsol = gettsol(L);
+rep = 1:length(tsol);

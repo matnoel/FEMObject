@@ -1,0 +1,6 @@
+function myannotation(x,y,s,varargin)
+% function myannotation(x,y,s,varargin)
+
+annotation('textbox',[x,y,0.03,.2],...
+    'FitHeightToText','on','HorizontalAlignment','center',...
+    'String',s,varargin{:});

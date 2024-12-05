@@ -1,0 +1,12 @@
+function P = calc_P(elem,xnode)
+
+R = calc_P(getsyscoord(elem));
+
+switch getindim(elem)
+    case 2
+RD = [R,zeros(2,1);zeros(1,2),1]; 
+P=[RD,zeros(3,3);zeros(3,3),RD];
+    case 3
+RD = [R,zeros(3,3);zeros(3,3),R] ;
+P = [RD,zeros(6,6);zeros(6,6),RD];
+end

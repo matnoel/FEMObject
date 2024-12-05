@@ -1,0 +1,86 @@
+function varargout = plot_lscracksol(elem,node,q,ls,varargin)
+
+if ~isenrich(elem)
+Helem = plot_sol(elem,q,varargin{:})
+else
+
+connec = getconnec(elem);
+connecenrich = getparam(elem,'connecenrich');
+connecnbddl = getparam(elem,'connecnbddl');
+conneclsenrichnature = getlsenrichnature(node,connec);
+xnode = getcoord(node,elem);
+
+lssupport=getlssupport(ls);
+lssupportval = getvalue(lssupport);
+% 
+% for e=1:getnbelem(elem);
+%     eleme= getelem(elem,e);
+%     connece = getconnec(eleme);
+%     nodee = getnode(node,connece);
+%     connecenriche = connecenrich(e,:);
+%     connecnbddle = connecnbddl(e,:);
+%     conneclsenrichnaturee = conneclsenrichnature(e,:);
+%     xnodee = xnode(:,:,e);
+% 
+% switch getlstype(elem)
+%     case {'indomain','in'}
+%         ls1 = lssupportval(connece);
+%         
+%         if all(ls1<=0) | all(ls1>=0)
+%         
+% 
+%         else
+% [elemin,elemout,nodeplus,xnodein,xnodeout] = ... 
+%        lsdivideelem(eleme,lssup,nodee);
+%         end
+%         
+%         phi = getN(eleme,gauss.coord)*ls1;
+%         Hphi = (phi>=0)-(phi<0);
+%     
+    
+    
+    
+lssup=getlssupport(ls);
+[elemin,elemout,nodeplus,xnodein,xnodeout] = ... 
+       lsdivideelem(elem,lssup,node);
+
+choix = [repmat({'in'},1,length(elemin)),repmat({'out'},1,length(elemout))];
+subelems = [elemin,elemout];
+subxnodes =  [xnodein,xnodeout];
+H = zeros(1,length(subelems));
+
+nodecoord=double(getcoord(nodeplus));
+qe=localize(elem,q);
+%keyboard
+
+xnode = node(elem);
+for k=1:length(subelems)
+subxnode = permute(subxnodes{k},[4,2,3,1]);
+%reshape(subxnode)
+subelem = subelems{k};
+[temp,numelem] = ismember(getnumber(subelem),getnumber(elem));
+u = zerosND(getindim(elem),1,getnbelem(subelem),getnbnode(subelem));
+
+for e=1:getnbelem(subelem) 
+eleme = getelem(elem,numelem(e));
+xnodee = xnode(:,:,numelem(e));
+
+Nls = calc_Nlscrack(eleme,xnodee,subxnode(:,:,e,:),ls,choix{k});
+
+u(:,:,e,:) = Nls*qe(:,:,numelem(e));
+end
+u = double(u);
+u = reshape(u,[size(u,1),numel(u)/size(u,1)])';
+subconnec = getconnec(subelem);
+globconnec = reshape(1:numel(subconnec),size(subconnec));
+H(k) = patch('faces',globconnec,...
+     'vertices',nodecoord(subconnec(:),:)+u,varargin{:});
+end
+
+
+  if nargout ==1
+      varargout{1}=H;
+  end
+
+end
+

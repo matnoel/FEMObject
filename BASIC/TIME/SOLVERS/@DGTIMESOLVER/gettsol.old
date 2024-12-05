@@ -1,0 +1,10 @@
+function tsol=gettsol(L)
+
+p = getparam(L,'p') ;
+t = gett(L);
+dt = getdt(L);
+tsol = t(1:end-1);
+for j=1:p
+tsol=[tsol;tsol(j,:)+dt/(p)];    
+end
+tsol=tsol(:)';

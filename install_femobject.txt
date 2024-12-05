@@ -1,0 +1,9 @@
+- Create a working directory for matlab
+example : ~/trashmatlab
+
+- Change initfemobjectoptions, with the good paths
+
+- when starting a new matlab session, run startfemobject which 
+	- adds FEMObject and all its subfolders in the path of Matlab
+	- run initfemobjectoptions and checkmexfiles
+	- move to directory ~/trashmatlab

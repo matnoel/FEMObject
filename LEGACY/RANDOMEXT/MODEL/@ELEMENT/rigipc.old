@@ -1,0 +1,20 @@
+function [ke,L] = rigipc(elem,node,PC,varargin)
+
+n=getcharinvarargin('intorder',varargin,'rigi');
+xnode = node(elem);
+gauss=calc_gauss(elem,n);
+detJ=calc_detJ(elem,xnode,gauss.coord);
+mat = getmaterial(elem);
+ke = rigipc(mat,elem,xnode,gauss.coord,PC);
+ke = sum(gauss.w*abs(detJ)*ke,4);
+
+if nargout==2
+if israndom(ke)
+L = getL(ke);
+ke = permute(getV(ke),[1,2,3,5,4]);
+else
+L = [];    
+end
+end
+
+

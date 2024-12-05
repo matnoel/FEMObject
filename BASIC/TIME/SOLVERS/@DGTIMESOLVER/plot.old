@@ -1,0 +1,5 @@
+function plot(N,f,varargin)
+
+t=gettsol(N);
+
+plot(t,f,varargin{:});

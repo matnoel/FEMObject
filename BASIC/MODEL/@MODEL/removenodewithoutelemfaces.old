@@ -1,0 +1,15 @@
+function M = removenodewithoutelemfaces(M)
+% function M = removenodewithoutelemfaces(M)
+
+M = keepnodefaces(M,getnumber(M.node));
+
+for i=1:length(M.facets)
+M.facets{i} = removenodewithoutelem(M.facets{i});
+end
+for i=1:length(M.ridges)
+M.ridges{i} = removenodewithoutelem(M.ridges{i});   
+end
+for i=1:length(M.peaks)
+M.peaks{i} = removenodewithoutelem(M.peaks{i});    
+end
+

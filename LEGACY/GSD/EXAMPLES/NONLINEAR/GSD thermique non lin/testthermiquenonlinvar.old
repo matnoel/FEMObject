@@ -1,0 +1,219 @@
+%% Definition probleme
+dim=1
+switch dim 
+    case 2
+        r=15;
+P = POINT([ 0,0 ; 1,0 ; 0,2 ; 1,2 ; 1,1 ; 2,1 ; 2,2 ; 0,1 ]);
+S1 = mesh(DOMAIN(2,P(1),P(5)),r,r);
+S2 = mesh(DOMAIN(2,P(8),P(4)),r,r);
+S3 = mesh(DOMAIN(2,P(5),P(7)),r,r);
+S = union(S1,S2);
+S = union(S,S3);
+S = concatgroupelem(S);
+S = convertelem(S,'TRI3')
+
+S = createddlnode(S,DDL('u'),DDL('g'));
+S = addcl(S,create_boundary(S),'u',0);
+
+    case 1
+P = POINT([0;1]);
+S = mesh(DOMAIN(1,P(1),P(2)),50);
+S = createddlnode(S,DDL('u'),DDL('g'));
+S = addcl(S,P,'u',0);
+        
+end
+
+RV = RANDVARS();
+RV{1}=RVUNIFORM(0.7,1.3);
+%RV{2}=RVNORMAL(1,0.2);
+%RV{2}=RVUNIFORM(0.7,1.3);
+%RV{3}=RVNORMAL(1,0.2);
+clear X;
+PCM = PCMODEL(RV,'order',14,'pcg');
+PC =getPC(PCM);
+X{1} = PCM{1};
+X{2} = 1;
+
+%
+ka=1;
+kn=1;
+kl=1;
+u = GSDthermiquesolvedet(S,1e-13,ka,kn,kl,'display');
+
+
+%
+a = BILINFORM(1,1)
+g = MULTILINFORM([1,1,0,0]) % n(v,u,u,u)
+n = MYFORM1();
+dn = MYFORM1GRAD();
+l = LINFORM(0,10);
+
+ulin = a{S}(:,:)\l{S}(:);
+figure(1)
+clf
+if dim==2
+subplot(1,2,1)
+plot(FENODEFIELD(ulin),S,'surface');
+title('lineaire')
+ax=axis;
+subplot(1,2,2)
+plot(FENODEFIELD(u),S,'surface');
+title('nonlineaire')
+axis(ax)
+else
+    plot(getcoord(getnode(S)),unfreevector(S,u),'r')
+hold on
+    plot(getcoord(getnode(S)),unfreevector(S,ulin),'b')
+legend('non-lineaire','lineaire')
+end
+%%
+%
+nbfun = 6;
+pfixiter = 6;
+tolnl=1e-3;
+tolfinal = 1e-12;
+epspfix = 1e-2;
+reac=1;
+subspace=3
+
+uM = PCRADIALMATRIX([size(u)],PC);
+stoU = zeros(size(u,1),0);
+stol = zeros(0,PC);
+clear errGSD
+clear errres
+for M=1:nbfun
+    fprintf('-----------------------------\n GSD couple #%d\n-----------------------------\n',M)
+lam0=allones(PC);
+lam0 = lam0/norm(lam0);
+
+    fprintf('-----------------------------\n POWER ITERATIONS \n-----------------------------\n')
+for iterpfix=1:pfixiter
+       
+%U = thermique_nonlin_FM(lam0,S,uM);
+
+
+ka=expectmtimes(X{1},lam0,lam0);
+kn=expectmtimes(lam0,lam0,lam0*lam0);
+kl=expectmtimes(X{2},lam0);
+
+if M>1
+stol = calc_masse(stol);
+Utilde = stoU * expectmtimes(lam0,stol,lam0*lam0);
+Urond =  stoU * expectmtimes(stol,X{1},lam0);
+Ubar = cell(1,getm(uM));
+Uchap = cell(getm(uM),getm(uM));
+Ui = cell(1,getm(uM));
+for j=1:getm(uM)
+Ui{j}= stoU(:,j);
+Ubar{j}=stoU * expectmtimes(stol,stol(j),lam0*lam0);
+for k=j:getm(uM)
+    Uchap{j,k} = stoU * expectmtimes(stol,stol(j)*stol(k),lam0);
+    Uchap{k,j} = Uchap{j,k};
+end
+end
+U = GSDthermiquesolvedetM(S,tolnl,ka,kn,kl,Ui,Urond,Utilde,Ubar,Uchap);
+else
+U = GSDthermiquesolvedet(S,tolnl,ka,kn,kl);
+end
+U = U/norm(U);
+%
+if M==1
+a1 = X{1}*a{S}(U,U);
+a2=0;
+a3 = n{S}(U,U);
+b = X{2}*l{S}(U);
+else
+N1 = g{S}(U,U,:,:)+2*g{S}(U,:,U,:);
+a1 = X{1}*a{S}(U,U) + stol'*(stoU'*N1*stoU)*stol;
+N2 = g{S}(U,:,U,U)+2*g{S}(U,U,:,U);
+a2 = stol'*(stoU'*N2);
+a3 = n{S}(U,U);
+b = X{2}*l{S}(U);
+b = b- X{1}*(stol'*(stoU'*a{S}(:,U)));
+for j=1:getm(uM)
+b = b - stol(j)*(stol'*(stoU'*g{S}(U,stoU(:,j),:,:)*stoU)*stol);
+end
+end
+
+lam = GSDthermiquesolvesto(PC,tolnl,a1,a2,a3,b);
+
+
+err = norm(lam-lam0)/norm(lam0);
+lam0=lam;
+
+fprintf('POWER iteration #%d : erreur %.3d\n',iterpfix,err);
+if err<epspfix
+    break
+end
+
+end
+
+stoU = [stoU,U];
+stol = [stol;lam];
+
+[stoU,R] = qr(stoU,0);
+stol = R*stol;
+
+if reac==0 | M==1
+uMtemp = PCRADIALMATRIX(stoU,[size(u)],stol);
+errGSD(M) = norm(uM-uMtemp)/norm(uMtemp);
+uM = uMtemp;
+elseif reac==1 
+
+for kkk=0:subspace
+fprintf('Reactualisation des va ...\n')
+s2 = size(stoU,2);
+a1 = X{1}*(stoU'*a{S}(:,:)*stoU);
+a2 = [];
+a3 = zeros(s2,s2,s2,s2);
+for k=1:s2
+a3(:,:,k,k) = stoU'*g{S}(stoU(:,k),stoU(:,k),:,:)*stoU;
+    for j=k+1:s2
+a3(:,:,j,k) = stoU'*g{S}(stoU(:,k),stoU(:,j),:,:)*stoU;
+a3(:,:,k,j)=a3(:,:,j,k);  
+    end    
+end
+b = X{2}*stoU'*l{S}(:);
+
+stol = GSDthermiquesolvestoreac(PC,tolfinal,a1,a2,a3,b);
+
+if kkk<subspace
+fprintf('Reactualisation des vecteurs ...\n')
+ka=expectmtimes(X{1},stol,stol');
+kn = zeros(s2,s2,s2,s2);
+for k=1:s2
+    for j=1:s2
+kn(:,:,k,j)=expectmtimes(stol,stol',stol(k)*stol(j));
+kn(:,:,j,k)=kn(:,:,k,j);
+    end
+end
+kl=expectmtimes(X{2},stol);
+stoU = GSDthermiquesolvedetreac(S,tolfinal,ka,kn,kl);
+[stoU,R] = qr(stoU,0);
+stol = R*stol;
+end
+end
+
+
+uMtemp = PCRADIALMATRIX(stoU,[size(u)],stol);
+errGSD(M) = norm(uM-uMtemp)/norm(uMtemp);
+uM = uMtemp;
+end
+fprintf('\n GSD : number of functions = %d , erreur %.3d\n',M,errGSD(M));
+
+s2 = size(stoU,2);
+b0 = X{2}*l{S}(:);
+b = b0 - (a{S}(:,:)*stoU)*(X{1}*stol);
+for k=1:s2
+    for j=1:s2
+temp = PCRADIALMATRIX(g{S}(:,:,stoU(:,k),stoU(:,j))*stoU,size(u),stol);        
+b = b - temp*stol(k)*stol(j);
+% for j=k+1:s2
+% b = b - 2*(g{S}(stoU(:,k),stoU(:,j),:,:)*stoU)*(stol*stol(k)*stol(j));    
+% end
+    end
+end
+errres(M) = norm(b)/norm(b0);
+fprintf(' GSD : number of functions = %d , erreur residu %.3d\n',M,errres(M));
+
+end

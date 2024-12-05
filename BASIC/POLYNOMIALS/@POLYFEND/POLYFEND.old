@@ -1,0 +1,86 @@
+function H = POLYFEND(Z,varargin)
+% H = POLYFEND(Z)
+% base élément fini pour un problème avec plusieurs variables aléatoires
+% polynômes orthonormés (polylegendre) sur [1,0]*[0,1] pour la mesure 1
+% nbdim nombre de dimensions stochastiques
+% varargin : 'statepoint', $0$ ou $1$ permet de garder l'information sur l'état de
+% l'élément aux sommets de chaque céllule.
+
+if nargin==1 && isa(Z,'double')
+H = struct();
+nbdim = Z;
+H.e{1}.way = zeros(1,nbdim);
+H.n = 1;
+h = cell(1,nbdim);
+h(:) = {POLYFE([0,1],[],'elem')};
+H.j = ones(1,nbdim);
+H.state = zeros(H.n,1);
+H.statepoint = []; 
+R = RANDPOLYS(h{:});
+H = class(H,'POLYFEND',R);
+
+elseif isa(Z,'cell')
+H=struct();
+H.e = Z;
+H.n = length(Z);
+nbdim = size(Z{1}.way,2);
+H.j = zeros(H.n,nbdim);
+state = zeros(H.n,1);
+statept = getcharin('statepoint',varargin,0);
+statepoint = zeros(H.n,2^nbdim);
+for k=1:nbdim
+    A = zeros(H.n,2);
+    for i=1:H.n
+        A(i,:) = calc_xi(Z{i},k,nbdim);
+        if k==nbdim
+        state(i,1) = Z{i}.state;
+        I = H.e{i}.signsommet;
+        if statept==1
+        for j=1:2^nbdim
+           J = I(:,j);
+           if all(sum((J==1 | J==0),1) == size(J,1))
+           statepoint(i,j) = 1;    
+           elseif all(sum((J==-1 | J==0),1) == size(J,1))
+           statepoint(i,j) = -1;    
+           elseif all(J==[-1 1 1]') || all(J==[-1 0 1]') || all(J==[1 -1 -1]') || all(J==[1 0 -1]')
+           statepoint(i,j) = 2;            
+           elseif all(J==[-1 -1 1]') || all(J==[1 1 -1]') 
+           statepoint(i,j) = 3;    
+           elseif all(J==[1 -1 1]') || all(J==[0 -1 1]') || all(J==[-1 1 -1]') || all(J==[0 1 -1]')
+           statepoint(i,j) = 4;    
+           end
+        end
+        end
+        end
+    end
+    [A,l,j] = unique(A,'rows');
+    h{k} = POLYFE(A,[],'elem');
+    H.j(:,k) = j; 
+end
+
+H.state = state;
+H.statepoint = statepoint;
+R = RANDPOLYS(h{:});
+H = class(H,'POLYFEND',R);
+
+end
+
+function [xi] = calc_xi(I_elem,n,stodim)
+% n : dim stochastique choisie
+
+if length(I_elem.order)==1
+xi = sum((I_elem.way(:,n)-1).*repmat((1/2).^[1:I_elem.order]',1,1),1);
+xi = [xi;xi+(1/2)^(I_elem.order)];
+else
+
+xi = sum((I_elem.way-1).*((1/2).^(I_elem.order)),1);
+if size(I_elem.order,1)==0
+xi = [xi;xi+(1/2).^zeros(1,stodim)];    
+else
+xi = [xi;xi+(1/2).^(I_elem.order(end,:))];
+end
+    
+xi = xi(:,n);
+end
+
+return

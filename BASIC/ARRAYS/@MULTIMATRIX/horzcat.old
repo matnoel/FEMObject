@@ -1,0 +1,19 @@
+function A=horzcat(varargin)
+
+for k=1:length(varargin)
+  
+  s=varargin{k}.s;
+  l(k)=s(1);
+  c(k)=s(2);
+  p(k)=size(varargin{k}.value,2);
+  value{k} = varargin{k}.';
+  value{k}=reshape(value{k}.value,c(k),l(k)*p(k));  
+end
+
+value = vertcat(value{:});
+value = reshape(value,[sum(c)*l(1)],p(1));
+A=varargin{1};
+A.s = [sum(c) , l(1)] ; 
+A.value = value ;
+A=A.';
+
