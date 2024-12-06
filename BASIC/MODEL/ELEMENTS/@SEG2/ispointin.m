@@ -14,7 +14,11 @@ s = dot(v,V);
 
 isin = norm(cross(V,v))<eps & s>=-eps & s<=L+eps;
 
-[numelem,repP] = ind2sub(sizeND(isin),find(isin));
+sND = sizeND(isin);
+if isscalar(sND)
+    sND = [sND,1];
+end
+[numelem,repP] = ind2sub(sND,find(isin));
 [repP,I] = unique(repP);
 numelem = numelem(I);
 

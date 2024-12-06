@@ -39,7 +39,11 @@ switch getindim(elem)
         isin = t1>=-eps & t2>=-eps & t3>=-eps & t4>=-eps & distortho<=eps;
 end
 
-[numelem,repP] = ind2sub(sizeND(isin),find(isin));
+sND = sizeND(isin);
+if isscalar(sND)
+    sND = [sND,1];
+end
+[numelem,repP] = ind2sub(sND,find(isin));
 [repP,I] = unique(repP);
 numelem = numelem(I);
 
