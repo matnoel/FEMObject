@@ -124,18 +124,18 @@ G = createplanesurface(G,numlines(end),1);
 if ischarin('recombine',varargin)
     G = recombinesurface(G,1);
 end
-% if ischarin('r',varargin)
-%     % rectangular notch
-%     numlinecrack = 3:5;
-% elseif ischarin('v',varargin)
-%     % V (triangular) notch
-%     numlinecrack = 3:4;
-% else%if ischarin('c',varargin)
-%     % circular notch
-%     numlinecrack = 3:6;
-% end
-% G = createphysicalline(G,numlinecrack,1);
-% G = createphysicalsurface(G,1,1);
+if ischarin('r',varargin)
+    % rectangular notch
+    numlinecrack = 3:5;
+elseif ischarin('v',varargin)
+    % V (triangular) notch
+    numlinecrack = 3:4;
+else%if ischarin('c',varargin)
+    % circular notch
+    numlinecrack = 3:6;
+end
+G = createphysicalline(G,numlinecrack,1);
+G = createphysicalsurface(G,1,1);
 varargin = delonlycharin({'recombine','refinecrack'},varargin);
 
 % Box field

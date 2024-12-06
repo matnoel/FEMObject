@@ -36,8 +36,8 @@ if indim==2
         openboundaryphysicalgroup = 1;
         G = createphysicalpoint(G,2,openboundaryphysicalgroup);
         G = createphysicalline(G,1,physicalgroup);
-        G = createphysicalsurface(G,1,1);
     end
+    G = createphysicalsurface(G,1,1);
     
 elseif indim==3
     if ischarin('refinecrack',varargin)
@@ -87,8 +87,8 @@ elseif indim==3
         G = createphysicalpoint(G,[1 4],openboundaryphysicalgroup);
         G = createphysicalline(G,[1 3 4],openboundaryphysicalgroup);
         G = createphysicalsurface(G,1,physicalgroup);
-        G = createphysicalvolume(G,1,1);
     end
+    G = createphysicalvolume(G,1,1);
     
 end
 varargin = delonlycharin({'recombine','refinecrack'},varargin);

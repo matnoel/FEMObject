@@ -60,6 +60,7 @@ end
 if ~isempty(numberembeddedlines)
     G = embedlinesinsurface(G,numberembeddedlines,1);
 end
+G = createphysicalsurface(G,1,1);
 varargin = delonlycharin('recombine',varargin);
 
 n=max(nargout,1);

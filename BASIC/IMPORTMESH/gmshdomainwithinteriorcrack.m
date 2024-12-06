@@ -36,8 +36,8 @@ if indim==2
         physicalgroup = 1;
         G = createphysicalpoint(G,numpoints,1);
         G = createphysicalline(G,numlines,physicalgroup);
-        G = createphysicalsurface(G,1,1);
     end
+    G = createphysicalsurface(G,1,1);
 elseif indim==3
     G = gmshfile(D,clD,1:8,1:4,1,1,varargin{:});
     numpoints = 8+(1:4*length(C));
@@ -52,8 +52,8 @@ elseif indim==3
         physicalgroup = 1;
         G = createphysicalline(G,numlines,1);
         G = createphysicalsurface(G,numbersurface,physicalgroup);
-        G = createphysicalvolume(G,1,1);
     end
+    G = createphysicalvolume(G,1,1);
 end
 varargin = delonlycharin('recombine',varargin);
 

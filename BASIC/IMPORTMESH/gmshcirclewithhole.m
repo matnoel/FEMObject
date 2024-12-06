@@ -68,9 +68,9 @@ if ~isempty(numberembeddedlines)
         physicalgroup = 1;
         G = createphysicalpoint(G,numberpointsinembeddedlines,1);
         G = createphysicalline(G,numberembeddedlines,physicalgroup);
-        G = createphysicalsurface(G,1,1);
     end
 end
+G = createphysicalsurface(G,1,1);
 varargin = delonlycharin('recombine',varargin);
 
 n=max(nargout,1);

@@ -71,10 +71,12 @@ if ischarin('recombine',varargin)
 end
 G = embedlineinsurface(G,1,1);
 if ~noduplicate
-    G = createphysicalpoint(G,3,1);
-    G = createphysicalline(G,1,1);
-    G = createphysicalsurface(G,1,1);
+    openboundaryphysicalgroup = 1;
+    physicalgroup = 1;
+    G = createphysicalpoint(G,3,openboundaryphysicalgroup);
+    G = createphysicalline(G,1,physicalgroup);
 end
+G = createphysicalsurface(G,1,1);
 
 varargin = delonlycharin({'recombine','refinecrack'},varargin);
 
@@ -123,7 +125,7 @@ varargout = cell(1,n);
 [varargout{:}] = gmsh2femobject(indim,G,2:-1:2-n+1,varargin{:});
 
 if ~noduplicate
-    G = createcrack(G,2-1,1,1);
+    G = createcrack(G,2-1,physicalgroup,openboundaryphysicalgroup);
     G = remesh(G,2,varargin{:});
     G = deleteoptfile(G);
     
